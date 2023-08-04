@@ -1,0 +1,10 @@
+# minimum working example for https://github.com/algesten/ureq/issues/645#issuecomment-1664881969
+# inside rootless Docker, a Rust application built with musl cannot resolve github.com
+
+[package]
+name = "mwedns"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ureq = "2.7.1"
