@@ -1,24 +1,26 @@
 # syntax=docker/dockerfile:1
-FROM clux/muslrust:1.73.0-nightly-2023-08-01 AS chef
-USER root
-RUN cargo install cargo-chef
+FROM clux/muslrust:1.71.0 as musl
+#USER root
 WORKDIR /app
-
-FROM chef AS planner
-ARG CARGO_INCREMENTAL=0
 COPY . .
-RUN cargo chef prepare --recipe-path recipe.json
-
-FROM chef AS builder
 ARG CARGO_INCREMENTAL=0
-COPY --link --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path recipe.json
-COPY . .
+# trying to resolve URLs, just show errors, don't abort
+# this *works* in rootless Docker
+RUN curl -sS -o /dev/null https://google.com; exit 0
+# this *fails* in rootless Docker in musl
+RUN curl -sS -o /dev/null https://github.com; exit 0
 RUN cargo build --release --target x86_64-unknown-linux-musl
+CMD ["/app/target/x86_64-unknown-linux-musl/release/mwedns"]
 
-FROM busybox:1.36.1 AS runtime
-RUN addgroup -S myuser && adduser -S myuser -G myuser
-COPY --link --from=builder /app/target/x86_64-unknown-linux-musl/release/mwedns /usr/local/bin/
-USER myuser
+FROM rust:1.71.0-slim
 WORKDIR /app
-CMD ["/usr/local/bin/mwedns"]
+COPY . .
+ARG CARGO_INCREMENTAL=0
+# this *works* in rootless Docker with the official Rust image
+RUN curl -sS -o /dev/null https://google.com; exit 0
+# this *fails* in rootless Docker with the normal Rust image
+RUN curl -sS -o /dev/null https://github.com; exit 0
+RUN cargo build --release
+COPY --link --from=musl /app/target/x86_64-unknown-linux-musl/release/mwedns /app/musl
+# run the one compiled with the official Rust image first
+CMD echo "official Rust" && /app/target/release/mwedns && echo "musl Rust" && /app/musl
