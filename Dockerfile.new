@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1
+FROM rust:1.83.0-slim AS builder
+WORKDIR /app
+COPY . .
+ARG CARGO_INCREMENTAL=0
+# this *works* in rootless Docker with the official Rust image
+RUN curl -sS -o /dev/null https://google.com; exit 0
+# this *fails* in rootless Docker with the normal Rust image
+RUN curl -sS -o /dev/null https://github.com; exit 0
+RUN cargo build --release
+
+FROM alpine-glibc
+COPY --link --from=builder /app/target/release/mwedns /app/mwedns
+#CMD echo "official Rust" && /app/mwedns
