@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM clux/muslrust:1.71.0 as musl
+FROM clux/muslrust:1.83.0-stable AS musl
 #USER root
 WORKDIR /app
 COPY . .
@@ -12,7 +12,7 @@ RUN curl -sS -o /dev/null https://github.com; exit 0
 RUN cargo build --release --target x86_64-unknown-linux-musl
 CMD ["/app/target/x86_64-unknown-linux-musl/release/mwedns"]
 
-FROM rust:1.71.0-slim
+FROM rust:1.83.0-slim
 WORKDIR /app
 COPY . .
 ARG CARGO_INCREMENTAL=0
